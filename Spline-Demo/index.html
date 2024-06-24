@@ -1,0 +1,259 @@
+
+<body onload=start()><font face=helvetica>
+<script src=g.js></script>
+<script src=m4.js></script>
+<center><table width=90%><tr><td><hr color=white size=0>
+
+   <!DOCTYPE html>
+   <html>
+      <head>
+          <title>Hermite Splines</title>
+          <script src="g.js"></script>
+          <script src="m4.js"></script>
+          <style>
+              body, h2, h3, p, table, td, canvas {
+                  margin: 5;
+                  padding: 5;
+              }
+             blockquote {
+                 white-space: nowrap; 
+                 overflow: auto;      
+                 margin-left: 10;      
+                 margin-right: 10;    
+             }
+
+             .content {
+               display: flex;
+               flex-direction: column;
+               align-items: center;
+               justify-content: center;
+               text-align: center;
+            }
+
+         </style>
+     </head>
+     <body onload="start()">
+      <div class="content">
+   
+   
+   <h2>This Interactive Demonstration Showcases Hermite Splines</h2>
+   <p>
+       A method named after French mathematician Charles Hermite. These splines are ideal for creating smooth curves through a set of control points and tangents, offering precise control over the curve's shape.
+   </p>
+   
+   <h3>The Concept</h3>
+   <p>
+       Hermite splines are defined by positions (endpoints) and tangents (rates of change) at these points. This setup allows for smooth interpolations between points.
+   </p>
+   
+   <h3>The Mathematics</h3>
+   <p>
+       The core of Hermite splines lies in four Hermite basis functions, enabling independent control over positions and rates at both ends of the curve. The curve is essentially a weighted sum of these polynomials, represented as a matrix-vector product:
+   </p>
+   <blockquote>
+   A (2t<sup>3</sup> - 3t<sup>2</sup> + 1) +
+   B (-2t<sup>3</sup> + 3t<sup>2</sup>) +
+   C (t<sup>3</sup> - 3t<sup>2</sup> + t) +
+   D (t<sup>3</sup> - t<sup>2</sup>)
+   </blockquote>
+
+
+   <canvas id=createRay width=800 height=800 tabindex="1"></canvas>
+
+</div>
+   </body>
+   </html>
+   
+</td>
+<td width=50></td>
+<td>
+</td>
+
+</tr></table>
+
+
+
+<script>
+
+
+   function mLine(a, b) {
+      var A = m.transform(a);
+      var B = m.transform(b);
+      line(A[0], A[1], B[0], B[1]);
+   }
+
+   function mArrow(a, b) {
+      var A = m.transform(a);
+      var B = m.transform(b);
+      arrow(A[0], A[1], B[0], B[1]);
+   }
+
+   function mText(str, p) {
+      var P = m.transform(p);
+      text(str, P[0], P[1]);
+   }
+
+   function vecAdd(a, b) {
+      return [a[0] + b[0], a[1] + b[1], a[2] + b[2]];
+   }
+
+   function vecScale(a, s) {
+      return [s * a[0], s * a[1], s * a[2]];
+   }
+
+   function vecLerp(t, a, b) {
+      return [lerp(t,a[0],b[0]), lerp(t,a[1],b[1]), lerp(t,a[2],b[2])];
+   }
+
+   createRay.u = 0.5;
+   createRay.v = 0.5;
+
+   createRay.setup = function() {
+      this.rotation = 0;
+   }
+
+
+   var splinePoints = [];
+   createRay.mouseUp = function(x, y) {
+      if (this.mouseY < height()/2)
+         this.isEngaged = true;
+
+         splinePoints.push({ x: this.mouseX, y: this.mouseY });
+         console.log("Spline Points:", splinePoints);
+         color('blue');
+
+   }
+
+function hermiteInterpolate(t, p0, p1, m0, m1) {
+    var t2 = t * t;
+    var t3 = t2 * t;
+    var h00 = 2 * t3 - 3 * t2 + 1;
+    var h10 = t3 - 2 * t2 + t;
+    var h01 = -2 * t3 + 3 * t2;
+    var h11 = t3 - t2;
+
+    return [
+        h00 * p0.x + h10 * m0.x + h01 * p1.x + h11 * m1.x,
+        h00 * p0.y + h10 * m0.y + h01 * p1.y + h11 * m1.y
+    ];
+}
+
+function calculateTangents(points) {
+    var tangents = [];
+    for (var i = 0; i < points.length - 1; i++) {
+        var tangent = {
+            x: points[i + 1].x - points[i].x,
+            y: points[i + 1].y - points[i].y
+        };
+        tangents.push(tangent);
+    }
+    tangents.push(tangents[tangents.length - 1]);
+    return tangents;
+}
+
+
+   createRay.animate = function() {
+      var w = width();
+      var h = height();
+
+      var x0 = w/4, x1 = x0 + w/2;
+      var y0 = h/16, y1 = y0 + w*3/8;
+
+      color('black');
+      drawRect(x0, y0, x1 - x0, y1 - y0);
+
+      color('#a0a0a0');
+
+      var V = [0,0,2];
+
+      splinePoints.forEach(function(point) {
+        color('blue'); 
+        fillOval(point.x - 5, point.y - 5, 6, 6); 
+    });
+
+    var ctx = document.getElementById('createRay').getContext('2d');
+    var tangents = calculateTangents(splinePoints);
+
+    ctx.beginPath();
+    color('red');
+
+    for (var i = 0; i < splinePoints.length - 1; i++) {
+        var p0 = splinePoints[i];
+        var p1 = splinePoints[i + 1];
+        var m0 = tangents[i];
+        var m1 = tangents[i + 1];
+
+        for (var t = 0; t <= 1; t += 0.01) {
+            var hermitePoint = hermiteInterpolate(t, p0, p1, m0, m1);
+            if (t === 0) {
+                ctx.moveTo(hermitePoint[0], hermitePoint[1]);
+            } else {
+                ctx.lineTo(hermitePoint[0], hermitePoint[1]);
+            }
+        }
+    }
+
+    ctx.stroke();
+
+
+      if (this.mouseY < h/2) {
+         if (this.isEngaged) {
+            var u = (this.mouseX-x0)/(x1-x0);
+            var v = (y1-this.mouseY)/(y1-y0);
+	    if (u >= 0 && v >= 0 && u < 1 && v < 1) {
+               this.u = u;
+               this.v = v;
+	    }
+         }
+      }
+      else
+         this.rotation = 1 - this.mouseX / (w/2);
+
+      var x = lerp(  this.u, x0, x1);
+      var y = lerp(1-this.v, y0, y1);
+
+      color(this.isEngaged ? 'red' : '#ffa0a0');
+
+      var c00 = [-1,-.75,0];
+      var c01 = [-1, .75,0];
+      var c10 = [ 1,-.75,0];
+      var c11 = [ 1, .75,0];
+
+      m.push();
+
+         color(this.isEngaged ? 'green' : '#ff8080');
+         textHeight(w/48);
+	 text(this.isEngaged ? "click to generate points in the spline" : "click to generate points in the spline", w*.282, y0 - w/48*0.7);
+
+         var W = [this.u*2-1,(this.v*2-1)*.75,-2];
+	      var aim = vecAdd(V, W);
+         m.normalize(W);
+
+         m.translate(w/2, h*3/4, 0);
+         m.perspective(0,0,-2*w);
+         m.rotateX(.2);
+         m.rotateY(this.rotation);
+         m.scale(100,-100,100);
+         color(this.isEngaged ? 'red' : '#ffa0a0');
+   }
+
+
+</script>
+
+</script>
+
+<script>
+   var pts=[[-1,-1,-1],[1,-1,-1],[-1,1,-1],[1,1,-1],[-1,-1,1],[1,-1,1],[-1,1,1],[1,1,1]];
+   var edges=[[0,1],[2,3],[4,5],[6,7],[0,2],[1,3],[4,6],[5,7],[0,4],[1,5],[2,6],[3,7]];
+   var m = new M4();
+
+   function unitCube() {
+      for (var i = 0 ; i < edges.length ; i++)
+         mLine(pts[edges[i][0]], pts[edges[i][1]]);
+   }
+
+</script>
+<hr>
+</td></tr></table></center>
+
+
