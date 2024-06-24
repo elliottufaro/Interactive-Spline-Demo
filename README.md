@@ -1,4 +1,4 @@
-This project demonstrates an interactive 3D spline visualization using. The demo includes various features such as dynamic spline manipulation, noise-based transformations, and user interaction through mouse events.
+This project demonstrates an interactive spline visualization. The demo includes various features such as dynamic spline manipulation, noise-based transformations, and user interaction through mouse events.
 
 Features
 - Interactive Controls: Users can interact with the splines using mouse events to move control points and adjust the shape of the spline.
